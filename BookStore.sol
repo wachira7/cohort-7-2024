@@ -1,23 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.2;
 
-pragma solidity ^0.8.2; 
-//Book Store
-//Books - cat_name, price, author, title, isbn, available
-// - string, unit, int, bool
+// Book Store - we have an owner
+// Books - cat_name, price, author, title, isbn, available
+// - string, uint, int, bool
 // uint8 (137) - unit256 (878687678678687876) 2*8 2*256
-// mapping -used to store items with their unique id
+// int8 - int255
+
+// struct - grouping items
+// mapping - used to store items with thier unique id
 // array - two type - dynamic, fixed size unit256[] and unit256[4]
 // event - notify about new addition or act as audit trail
 // variables - global, state, local
 
-//functions - setters and getter
-//addBooks() - setter...for setting data
-//buyBooks() - getter - getting data
-//getTotalBooks
+// functions - setters and getters
+// addBooks() - event BookAdded setter - setting data
+// getBook() - getter - getting data
+// buyBook() - event
+// getTotalBooks() -
+
+// inheritance -
+
+// more than 2 contracts
+// index contract - entry point for all your other contracts
+// interface contracts - abstracts functions that are reusable  - IERC20
+// modifer contracts - require statements thats reusable
+// opezzenplin contracts -
+
+// ABI - Application Binary Interface - xml, json, graphql - bridge between la backend python, php, javascript - react or next or reactNative
+
+// example - assignment
+// create a loyaltyProgram - contract for the bookstore - two addPoint to user address, getUserPoints
+// use the opezepplin contract for ownable
+// create a discount contract - two functions - setDiscount(either fixed or percentage), getDiscountedPrice
+// use the points for the discount -
 
 
 contract BookStore {
-    address payable public owner;  //  owner is the one made payable to receive payments
+    address public owner;
+    uint256 private constant LOW_STOCK_THRESHOLD = 5;
 
     struct Book {
         string title;
@@ -26,39 +47,50 @@ contract BookStore {
         uint256 stock;
         bool isAvailable;
         uint256 totalSold;
-        bool isCreated;
+        uint256 lastRestockTime;
     }
 
     mapping(uint256 => Book) public books;
     uint256[] public bookIds;
-    uint256 public totalBooksSold;
+    
+    // Enhanced Events
+   
+    event BookAdded(uint256 indexed bookId, string title, string author, uint256 price, uint256 stock, address indexed addedBy, uint256 timestamp);
+    event BookUpdated(uint256 indexed bookId, uint256 newPrice, uint256 newStock, bool isAvailable, address indexed updatedBy, uint256 timestamp);
+    event BookSold(uint256 indexed bookId, address indexed buyer, uint256 quantity, uint256 totalAmount, uint256 timestamp);   
+    event PurchaseInitiated(uint256 indexed bookId, address indexed buyer, uint256 quantity, uint256 totalAmount, uint256 timestamp);  // Added this event
+    event PurchaseConfirmed(uint256 indexed bookId, address indexed buyer, uint256 quantity, uint256 totalAmount, uint256 timestamp);
+    event PurchaseFailed(uint256 indexed bookId, address indexed buyer, uint256 quantity, string reason, uint256 timestamp);  // Fixed parameter order
+    event LowStockAlert(uint256 indexed bookId, uint256 currentStock, uint256 timestamp);
+    event StockReplenished(uint256 indexed bookId, uint256 addedStock, uint256 newTotalStock, uint256 timestamp);
 
-    event BookAdded(uint256 indexed bookId, string title, string author, uint256 price, uint256 stock);
-    event BookPurchased(uint256 indexed bookId, address indexed buyer, uint256 quantity);
-    event BookRemoved(uint256 indexed bookId);
-
-    constructor() {
-        owner = payable(msg.sender);  
-    }
-
+    // Modifiers
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can perform this action");
+        require(msg.sender == owner, "Only the owner can perform this action.");
         _;
     }
 
-   function addBook(
-        uint256 _bookId,
-        string memory _title,
-        string memory _author,
-        uint256 _price,
+    modifier bookExists(uint256 _bookId) {
+        require(books[_bookId].price != 0, "Book does not exist.");
+        _;
+    }
+
+    constructor(address _owner) {
+        owner = _owner;
+    }
+
+    function addBook(
+        uint256 _bookId, 
+        string memory _title, 
+        string memory _author, 
+        uint256 _price, 
         uint256 _stock
     ) public onlyOwner {
-        require(!books[_bookId].isCreated, "the book does not exist");
         require(books[_bookId].price == 0, "Book already exists with this ID.");
-        require(_price > 0, "Price must be greater than 0");
         require(bytes(_title).length > 0, "Title cannot be empty");
         require(bytes(_author).length > 0, "Author cannot be empty");
-
+        require(_price > 0, "Price must be greater than 0");
+        
         books[_bookId] = Book({
             title: _title,
             author: _author,
@@ -66,88 +98,173 @@ contract BookStore {
             stock: _stock,
             isAvailable: _stock > 0,
             totalSold: 0,
-            isCreated: true
+            lastRestockTime: block.timestamp
         });
         
         bookIds.push(_bookId);
-        emit BookAdded(_bookId, _title, _author, _price, _stock);
+        
+        emit BookAdded(
+            _bookId, 
+            _title, 
+            _author, 
+            _price, 
+            _stock,
+            msg.sender,
+            block.timestamp
+        );
+
+        if (_stock <= LOW_STOCK_THRESHOLD) {
+            emit LowStockAlert(_bookId, _stock, block.timestamp);
+        }
     }
 
-    function removeBook(uint256 _bookId) public onlyOwner {
-        require(books[_bookId].price > 0, "Book does not exist");
+    function updateBook( uint256 _bookId, uint256 _newPrice, uint256 _additionalStock) 
+      public onlyOwner bookExists(_bookId) {
+        Book storage book = books[_bookId];
         
+        if (_newPrice > 0) {
+            book.price = _newPrice;
+        }
         
-        for (uint256 i = 0; i < bookIds.length; i++) {
-            if (bookIds[i] == _bookId) {
-                // Move the last element to the position we want to remove
-                bookIds[i] = bookIds[bookIds.length - 1];
-                // Remove the last element
-                bookIds.pop();
-                break;
-            }
+        if (_additionalStock > 0) {
+            book.stock += _additionalStock;
+            book.isAvailable = true;
+            book.lastRestockTime = block.timestamp;
+            
+            emit StockReplenished(
+                _bookId,
+                _additionalStock,
+                book.stock,
+                block.timestamp
+            );
         }
 
-        // for deleting the book from the mapping
-        delete books[_bookId];
-        emit BookRemoved(_bookId);
+        emit BookUpdated(
+            _bookId,
+            book.price,
+            book.stock,
+            book.isAvailable,
+            msg.sender,
+            block.timestamp
+        );
     }
 
-    function getBook(uint256 _bookId) public view returns (
-        string memory title,
-        string memory author,
-        uint256 price,
-        uint256 stock,
-        bool isAvailable,
-        uint256 totalSold
-    ) {
+    function getBook(uint256 _bookId) 
+        public 
+        view 
+        bookExists(_bookId) 
+        returns (
+            string memory,
+            string memory,
+            uint256,
+            uint256,
+            bool,
+            uint256
+        ) 
+    {
         Book memory book = books[_bookId];
-        return (book.title, book.author, book.price, book.stock, book.isAvailable, book.totalSold);
+        return (
+            book.title,
+            book.author,
+            book.price,
+            book.stock,
+            book.isAvailable,
+            book.totalSold
+        );
     }
 
-    function buyBook(uint256 _bookId, uint256 _quantity,uint256 _amount) public payable {
+    function getAllBooks() public view returns (uint256[] memory) {
+        return bookIds;
+    }
+
+    function purchaseBook(
+        uint256 _bookId, 
+        uint256 _quantity
+        // payable - payment is needed
+    ) public virtual payable bookExists(_bookId) {
         Book storage book = books[_bookId];
-        require(books[_bookId].price > 0, "Book does not exist");
-        require(books[_bookId].isAvailable, "This book is not available");
-        require(books[_bookId].stock >= _quantity, "Not enough stock available");
-        require(_quantity > 0, "quantity must be greater thatn zero");
-        require(_amount == book.price * _quantity, "Incorrect payment amount.");
+        uint256 totalAmount = book.price * _quantity;
 
-        books[_bookId].stock -= _quantity;
-        books[_bookId].isAvailable = book.stock > 0;
-        books[_bookId].totalSold += _quantity;
-        totalBooksSold += _quantity;
+        emit PurchaseInitiated(
+            _bookId,
+            msg.sender,
+            _quantity,
+            totalAmount,
+            block.timestamp
+        );
 
-       // Transfer payment to the owner - paybale == transfer(from, to, amount)
-
-        payable(owner).transfer(msg.value);
+        // Validations
+        if (!book.isAvailable) {
+            emit PurchaseFailed(_bookId, msg.sender, _quantity, "Book not available", block.timestamp);
+            revert("This book is not available.");
+        }
         
-        emit BookPurchased(_bookId, msg.sender, _quantity);
+        if (book.stock < _quantity) {
+            emit PurchaseFailed(_bookId, msg.sender, _quantity, "Insufficient stock", block.timestamp);
+            revert("Not enough stock available.");
+        }
+        
+        if (msg.value != totalAmount) {
+            emit PurchaseFailed(_bookId, msg.sender, _quantity, "Incorrect payment", block.timestamp);
+            revert("Incorrect payment amount.");
+        }
+
+        // Update book data
+        book.stock -= _quantity;
+        book.totalSold += _quantity;
+        
+        if (book.stock == 0) {
+            book.isAvailable = false;
+        }
+
+        // Check for low stock after purchase
+        if (book.stock <= LOW_STOCK_THRESHOLD) {
+            emit LowStockAlert(_bookId, book.stock, block.timestamp);
+        }
+
+        // Transfer payment
+        payable(owner).transfer(msg.value);
+
+        emit PurchaseConfirmed(
+            _bookId,
+            msg.sender,
+            _quantity,
+            totalAmount,
+            block.timestamp
+        );
     }
 
-    function getTotalBooks() public view returns (uint256) {
+    // New helper functions
+    function getBooksCount() public view returns (uint256) {
         return bookIds.length;
     }
 
-    function getTotalBooksSold() public view returns (uint256) {
-        return totalBooksSold;
-    }
-
-    function getBookSales(uint256 _bookId) public view returns (uint256) {
-        require(books[_bookId].price > 0, "Book does not exist");
+    function getBookSales(uint256 _bookId) 
+        public 
+        view 
+        bookExists(_bookId) 
+        returns (uint256) 
+    {
         return books[_bookId].totalSold;
     }
 
-    function getContractBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
-    function getOwnerBalance() public view returns (uint256) {
-        return owner.balance;
-    }
-
-    function updateBookPrice(uint256 _bookId, uint256 _newPrice) public onlyOwner {
-        require(books[_bookId].price > 0, "Book does not exist");
-        require(_newPrice > 0, "Price must be greater than 0");
-        books[_bookId].price = _newPrice;
+    function getLowStockBooks() public view returns (uint256[] memory) {
+        uint256[] memory lowStockBooks = new uint256[](bookIds.length);
+        uint256 count = 0;
+        
+        for (uint256 i = 0; i < bookIds.length; i++) {
+            if (books[bookIds[i]].stock <= LOW_STOCK_THRESHOLD) {
+                lowStockBooks[count] = bookIds[i];
+                count++;
+            }
+        }
+        
+        // Resize array to actual count
+        uint256[] memory result = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = lowStockBooks[i];
+        }
+        
+        return result;
     }
 }

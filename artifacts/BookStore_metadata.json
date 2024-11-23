@@ -6,7 +6,13 @@
 	"output": {
 		"abi": [
 			{
-				"inputs": [],
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_owner",
+						"type": "address"
+					}
+				],
 				"stateMutability": "nonpayable",
 				"type": "constructor"
 			},
@@ -42,6 +48,18 @@
 						"internalType": "uint256",
 						"name": "stock",
 						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "addedBy",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
 					}
 				],
 				"name": "BookAdded",
@@ -67,9 +85,21 @@
 						"internalType": "uint256",
 						"name": "quantity",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalAmount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
 					}
 				],
-				"name": "BookPurchased",
+				"name": "BookSold",
 				"type": "event"
 			},
 			{
@@ -80,9 +110,206 @@
 						"internalType": "uint256",
 						"name": "bookId",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newPrice",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newStock",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "bool",
+						"name": "isAvailable",
+						"type": "bool"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "updatedBy",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
 					}
 				],
-				"name": "BookRemoved",
+				"name": "BookUpdated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "bookId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "currentStock",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "LowStockAlert",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "bookId",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "buyer",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "quantity",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalAmount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "PurchaseConfirmed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "bookId",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "buyer",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "quantity",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "reason",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "PurchaseFailed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "bookId",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "buyer",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "quantity",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "totalAmount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "PurchaseInitiated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "bookId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "addedStock",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newTotalStock",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"name": "StockReplenished",
 				"type": "event"
 			},
 			{
@@ -178,35 +405,25 @@
 						"type": "uint256"
 					},
 					{
-						"internalType": "bool",
-						"name": "isCreated",
-						"type": "bool"
+						"internalType": "uint256",
+						"name": "lastRestockTime",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
 				"type": "function"
 			},
 			{
-				"inputs": [
+				"inputs": [],
+				"name": "getAllBooks",
+				"outputs": [
 					{
-						"internalType": "uint256",
-						"name": "_bookId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_quantity",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_amount",
-						"type": "uint256"
+						"internalType": "uint256[]",
+						"name": "",
+						"type": "uint256[]"
 					}
 				],
-				"name": "buyBook",
-				"outputs": [],
-				"stateMutability": "payable",
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -221,32 +438,32 @@
 				"outputs": [
 					{
 						"internalType": "string",
-						"name": "title",
+						"name": "",
 						"type": "string"
 					},
 					{
 						"internalType": "string",
-						"name": "author",
+						"name": "",
 						"type": "string"
 					},
 					{
 						"internalType": "uint256",
-						"name": "price",
+						"name": "",
 						"type": "uint256"
 					},
 					{
 						"internalType": "uint256",
-						"name": "stock",
+						"name": "",
 						"type": "uint256"
 					},
 					{
 						"internalType": "bool",
-						"name": "isAvailable",
+						"name": "",
 						"type": "bool"
 					},
 					{
 						"internalType": "uint256",
-						"name": "totalSold",
+						"name": "",
 						"type": "uint256"
 					}
 				],
@@ -274,7 +491,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "getContractBalance",
+				"name": "getBooksCount",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -287,38 +504,12 @@
 			},
 			{
 				"inputs": [],
-				"name": "getOwnerBalance",
+				"name": "getLowStockBooks",
 				"outputs": [
 					{
-						"internalType": "uint256",
+						"internalType": "uint256[]",
 						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "getTotalBooks",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "getTotalBooksSold",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
+						"type": "uint256[]"
 					}
 				],
 				"stateMutability": "view",
@@ -329,35 +520,9 @@
 				"name": "owner",
 				"outputs": [
 					{
-						"internalType": "address payable",
+						"internalType": "address",
 						"name": "",
 						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "_bookId",
-						"type": "uint256"
-					}
-				],
-				"name": "removeBook",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "totalBooksSold",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -372,11 +537,34 @@
 					},
 					{
 						"internalType": "uint256",
-						"name": "_newPrice",
+						"name": "_quantity",
 						"type": "uint256"
 					}
 				],
-				"name": "updateBookPrice",
+				"name": "purchaseBook",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_bookId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_newPrice",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_additionalStock",
+						"type": "uint256"
+					}
+				],
+				"name": "updateBook",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -410,11 +598,11 @@
 	},
 	"sources": {
 		"BookStore.sol": {
-			"keccak256": "0xb2893ced39d561942cc6f2548b59b9cbb3ce1b49816c1a5dc19a89594fa1f0bc",
+			"keccak256": "0x15aa82b82bf1a1efbe68389ce4112e83b7395bb21a178d5422327a2862881244",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://fcb328d05a5bfe3d05e858804e7e50d3bced375980f21e051110b876c0584d09",
-				"dweb:/ipfs/QmTEdCW5sArcLyneRXjLmgVxDkcYb6eQmJ1RZnk4fqdgiP"
+				"bzz-raw://cc21f0873b61fbf4ce6d36c7af2026428f31810cb08c83e5921ea09a36deda31",
+				"dweb:/ipfs/QmQ6DaZfgUrVoiyzqqyJRixi8BBpq8sgqJUPPpMEBZatdT"
 			]
 		}
 	},
